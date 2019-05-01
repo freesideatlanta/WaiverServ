@@ -1,0 +1,1 @@
+KERNEL=="hidraw*", ATTRS{idVendor}=="06a8", ATTRS{idProduct}=="0043", GROUP="root", MODE="0666", SYMLINK+="topaz"

@@ -1,0 +1,9 @@
+@lxpanel --profile LXDE-pi
+@pcmanfm --desktop --profile LXDE-pi
+#@xscreensaver -no-splash
+@point-rpi
+@xset s off
+@xset -dpms
+@xset s noblank
+@unclutter
+@/bin/sh /usr/local/bin/FSWaiver/run_waiver.sh
