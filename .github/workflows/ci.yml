@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - run: sudo chmod a+rw /dev/kvm  # the polkit NixOS VM test needs it
+      - run: nix flake check -L ./waiver-py
+      - run: |
+          nix build -L --print-out-paths \
+            './waiver-py#nixosConfigurations.waiverserv.config.system.build.sdImage' \
+            > out.txt
+          echo "img=$(cat out.txt)/sd-image/$(ls $(cat out.txt)/sd-image)" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sd-image
+          path: ${{ env.img }}

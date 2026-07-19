@@ -1,1 +1,5 @@
+outputs/
 .vs/
+__pycache__/
+result
+result-*
