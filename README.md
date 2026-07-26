@@ -16,9 +16,8 @@ nix run .
 
 Or in a dev shell: `nix develop` then `./main.py`.
 
-Signed waivers are written to `$WAIVER_SAVE_DIR` (required) as timestamped
-PNGs. On the kiosk they are also uploaded to a Google Shared Drive; see
-[gdrive-sync.md](gdrive-sync.md) for the one-time setup.
+Signed waivers are written to `$WAIVER_SAVE_DIR` (required) & uploaded to a
+Google Shared Drive; see [gdrive-sync.md](gdrive-sync.md) for the one-time setup.
 
 ## SD card image
 
@@ -35,8 +34,8 @@ You may wish to set up nixbuild.net for fast native builds.
 ## Flashing the SD card
 
 The build leaves a compressed image in `result/sd-image/`. Write it to the card
-(replace `/dev/sdX` with the card's device — check with `lsblk`; getting this
-wrong overwrites the wrong disk):
+(replace `/dev/sdX` with the card's device — check first with `lsblk` so you
+don't wipe your whole disk!!):
 
 ```sh
 zstdcat result/sd-image/*.img.zst | sudo dd of=/dev/sdX bs=4M status=progress conv=fsync
@@ -51,10 +50,6 @@ the `FIRMWARE` partition before first boot; see
 ```sh
 nixos-rebuild switch --flake .#waiverserv --target-host admin@192.168.1.101 --sudo
 ```
-
-`--sudo` is required — `admin` isn't root, so without it the switch fails with
-`Permission denied` creating `/nix/var/nix/profiles/system-N-link`. Sudo is
-passwordless there, so no `--ask-elevate-password`.
 
 ## Testing without a signature pad
 
