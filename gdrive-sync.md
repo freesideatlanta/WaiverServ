@@ -9,11 +9,20 @@ files are skipped.
 It authenticates as a service account — an org-owned robot identity, not tied
 to any employee's Google account. One-time setup:
 
-## 1. Create a Shared Drive
+## 1. Note the two IDs
 
-- Go to our GDrive waivers folder, under Freeside Admin -> Legal -> FSWaivers
-- Open it and note the ID: the last part of the URL,
-  `https://drive.google.com/drive/folders/<ID>`.
+Our waivers folder is Freeside Admin -> Legal -> FSWaivers. You need both the
+Shared Drive it lives in and the folder itself; they are different IDs and
+rclone wants both.
+
+- **Shared drive ID** — click the Shared Drive in the left sidebar. The URL is
+  `https://drive.google.com/drive/folders/<ID>`, and the ID starts with `0A`
+  (~19 characters).
+- **Folder ID** — open FSWaivers. Same URL shape, but the ID starts with `1`
+  (~33 characters).
+
+Putting the folder ID in `team_drive` is the easy mistake; rclone reports it
+as `Error 404: Shared drive not found`.
 
 ## 2. Create a service account
 
@@ -26,10 +35,15 @@ https://eqpsolutions.com/blog/misc-5/how-to-enable-and-grant-access-to-the-googl
 In the Shared Drive: Manage members → add the service account's email
 (`…@….iam.gserviceaccount.com`) as **Content manager**.
 
+A service account that isn't a member gets the same `notFound` error as a
+wrong ID, so do this before debugging anything else.
+
 ## 4. Configure the kiosk
 
 Put the downloaded key on the kiosk's SD card as `sa-key.json`, alongside an
-`rclone.conf` — see [sd-card-config.md](sd-card-config.md). On a running
+`rclone.conf` — see [sd-card-config.md](sd-card-config.md); both are copied to
+`/var/lib/waiverserv-sync/` at boot, so `service_account_file` must point
+there rather than at the card. On a running
 kiosk you can instead write them straight to `/var/lib/waiverserv-sync`:
 
 ```sh
@@ -37,7 +51,8 @@ sudo tee /var/lib/waiverserv-sync/rclone.conf <<'EOF'
 [gdrive]
 type = drive
 service_account_file = /var/lib/waiverserv-sync/sa-key.json
-team_drive = <shared drive ID>
+team_drive = <shared drive ID, 0A…>
+root_folder_id = <FSWaivers folder ID, 1…>
 EOF
 sudo chown waiver:waiver /var/lib/waiverserv-sync/*
 sudo chmod 600 /var/lib/waiverserv-sync/*

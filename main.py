@@ -7,6 +7,7 @@ from pathlib import Path
 
 import cairo
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Gdk", "4.0")
 from gi.repository import Gdk, Gio, GLib, Gtk
@@ -75,11 +76,18 @@ def sync_finished(bus, result, *_):
 def start_sync():
     try:
         bus = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
-        bus.call("org.freedesktop.systemd1", "/org/freedesktop/systemd1",
-                 "org.freedesktop.systemd1.Manager", "StartUnit",
-                 GLib.Variant("(ss)", (SYNC_UNIT, "replace")),
-                 GLib.VariantType("(o)"), Gio.DBusCallFlags.NONE, -1, None,
-                 sync_finished)
+        bus.call(
+            "org.freedesktop.systemd1",
+            "/org/freedesktop/systemd1",
+            "org.freedesktop.systemd1.Manager",
+            "StartUnit",
+            GLib.Variant("(ss)", (SYNC_UNIT, "replace")),
+            GLib.VariantType("(o)"),
+            Gio.DBusCallFlags.NONE,
+            -1,
+            None,
+            sync_finished,
+        )
     except GLib.Error:
         log.exception("no system bus, skipping %s", SYNC_UNIT)
 
@@ -115,15 +123,18 @@ class Layout:
         self.screen_h = screen_h
 
     def place(self, widget, top, left):
-        return positioned(widget, self.off_y + int(top * self.scale),
-                          self.off_x + int(left * self.scale))
+        return positioned(
+            widget,
+            self.off_y + int(top * self.scale),
+            self.off_x + int(left * self.scale),
+        )
 
     def box(self, widget, top, left, w, h):
         t = self.off_y + int(top * self.scale)
-        l = self.off_x + int(left * self.scale)
+        lf = self.off_x + int(left * self.scale)
         widget.set_margin_top(t)
-        widget.set_margin_start(l)
-        widget.set_margin_end(self.screen_w - l - int(w * self.scale))
+        widget.set_margin_start(lf)
+        widget.set_margin_end(self.screen_w - lf - int(w * self.scale))
         widget.set_margin_bottom(self.screen_h - t - int(h * self.scale))
         return widget
 
@@ -193,19 +204,31 @@ class SignatureField:
 
     def relayout(self, layout):
         name_y = self.sig_y + NAME_DY
-        layout.box(self.picture, self.sig_y - SIG_DISP_H, SIG_LINE_X,
-                   SIG_LINE_W, SIG_DISP_H)
-        layout.place(layout.size(self.sign_prompt, SIG_LINE_W, ROW_H),
-                     self.sig_y - ROW_H, SIG_LINE_X)
-        layout.place(layout.size(self.name_label, NAME_LINE_W, ROW_H),
-                     name_y - ROW_H, NAME_LINE_X)
-        layout.place(layout.size(self.entry, NAME_LINE_W, ROW_H),
-                     name_y - ROW_H, NAME_LINE_X)
+        layout.box(
+            self.picture, self.sig_y - SIG_DISP_H, SIG_LINE_X, SIG_LINE_W, SIG_DISP_H
+        )
+        layout.place(
+            layout.size(self.sign_prompt, SIG_LINE_W, ROW_H),
+            self.sig_y - ROW_H,
+            SIG_LINE_X,
+        )
+        layout.place(
+            layout.size(self.name_label, NAME_LINE_W, ROW_H),
+            name_y - ROW_H,
+            NAME_LINE_X,
+        )
+        layout.place(
+            layout.size(self.entry, NAME_LINE_W, ROW_H), name_y - ROW_H, NAME_LINE_X
+        )
 
     def refresh(self):
         texture = Gdk.MemoryTexture.new(
-            SIG_W, SIG_H, Gdk.MemoryFormat.R8G8B8A8,
-            GLib.Bytes.new(bytes(self.data)), SIG_STRIDE)
+            SIG_W,
+            SIG_H,
+            Gdk.MemoryFormat.R8G8B8A8,
+            GLib.Bytes.new(bytes(self.data)),
+            SIG_STRIDE,
+        )
         self.picture.set_paintable(texture)
 
     def render_name(self):
@@ -239,16 +262,16 @@ class SignatureField:
             x = x0 + (x1 - x0) * i // steps
             y = y0 + (y1 - y0) * i // steps
             o = y * SIG_STRIDE + x * 4
-            self.data[o:o + 4] = INK
+            self.data[o : o + 4] = INK
 
     def _flatten(self):
         points = 0
         for o in range(0, len(self.data), 4):
-            if self.data[o:o + 3] == b"\x00\x00\x00":
+            if self.data[o : o + 3] == b"\x00\x00\x00":
                 self.data[o + 3] = 0xFF
                 points += 1
             else:
-                self.data[o:o + 4] = b"\x00\x00\x00\x00"
+                self.data[o : o + 4] = b"\x00\x00\x00\x00"
         return points
 
     def finalize(self):
@@ -258,8 +281,13 @@ class SignatureField:
             self.active = False
             points = self._flatten()
             self.valid = points >= MIN_SIG_POINTS
-            log.info("signature at y=%d: %d points (min %d), valid=%s",
-                     self.sig_y, points, MIN_SIG_POINTS, self.valid)
+            log.info(
+                "signature at y=%d: %d points (min %d), valid=%s",
+                self.sig_y,
+                points,
+                MIN_SIG_POINTS,
+                self.valid,
+            )
             self.refresh()
             if self.valid:
                 entered = True
@@ -316,8 +344,10 @@ class WaiverApp(Gtk.Application):
 
         self.provider = Gtk.CssProvider()
         Gtk.StyleContext.add_provider_for_display(
-            Gdk.Display.get_default(), self.provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+            Gdk.Display.get_default(),
+            self.provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+        )
 
         self.window = Gtk.ApplicationWindow(application=self)
         geo = Gdk.Display.get_default().get_monitors().get_item(0).get_geometry()
@@ -332,8 +362,9 @@ class WaiverApp(Gtk.Application):
         self.overlay.set_child(self.waiver)
 
         self.main_sig = SignatureField(self.overlay, SIG_ROWS[0], self.finalize_all)
-        self.parent_sig = SignatureField(self.overlay, SIG_ROWS[1], self.finalize_all,
-                                         on_data=self.on_parent_entered)
+        self.parent_sig = SignatureField(
+            self.overlay, SIG_ROWS[1], self.finalize_all, on_data=self.on_parent_entered
+        )
 
         self.minor_label = prompt_label(AGE_PROMPT)
         add_click(self.minor_label, self.on_minor_click)
@@ -345,8 +376,10 @@ class WaiverApp(Gtk.Application):
         self.update_dates()
 
         self.buttons = []
-        for text, quarter, handler in (("SUBMIT", 1, self.on_submit),
-                                       ("CANCEL", 3, self.on_cancel)):
+        for text, quarter, handler in (
+            ("SUBMIT", 1, self.on_submit),
+            ("CANCEL", 3, self.on_cancel),
+        ):
             button = Gtk.Button(label=text)
             button.set_size_request(200, 100)
             button.connect("clicked", handler)
@@ -377,8 +410,13 @@ class WaiverApp(Gtk.Application):
         surface.connect("notify::height", self.queue_relayout)
         self.queue_relayout()
 
-        log.info("started: screen %dx%d, pad %s, save dir %s",
-                 geo.width, geo.height, TOUCHPAD_DEV, SAVE_DIR)
+        log.info(
+            "started: screen %dx%d, pad %s, save dir %s",
+            geo.width,
+            geo.height,
+            TOUCHPAD_DEV,
+            SAVE_DIR,
+        )
         self.pad = TopazPad(TOUCHPAD_DEV, SIG_W, SIG_H, self.on_pad_events)
         self.pad.start()
         GLib.timeout_add_seconds(20, self.update_dates)
@@ -446,10 +484,14 @@ class WaiverApp(Gtk.Application):
             return
         ok = self.main_sig.complete and (not self.is_minor or self.parent_sig.complete)
         if not ok:
-            log.info("submit rejected: main sig=%s name=%r, minor=%s, "
-                     "parent sig=%s name=%r",
-                     self.main_sig.valid, self.main_sig.name, self.is_minor,
-                     self.parent_sig.valid, self.parent_sig.name)
+            log.info(
+                "submit rejected: main sig=%s name=%r, minor=%s, parent sig=%s name=%r",
+                self.main_sig.valid,
+                self.main_sig.name,
+                self.is_minor,
+                self.parent_sig.valid,
+                self.parent_sig.name,
+            )
             self.show_status("Error: Please Fill Out Red Fields.", "error")
         elif self.save_waiver():
             self.submit_confirmed = True
@@ -502,7 +544,8 @@ class WaiverApp(Gtk.Application):
         fields = (self.main_sig, self.parent_sig) if self.is_minor else (self.main_sig,)
         for field in fields:
             sig = cairo.ImageSurface.create_for_data(
-                field.data, cairo.FORMAT_ARGB32, SIG_W, SIG_H, SIG_STRIDE)
+                field.data, cairo.FORMAT_ARGB32, SIG_W, SIG_H, SIG_STRIDE
+            )
             cr.save()
             cr.translate(SIG_LINE_X, field.sig_y - SIG_DISP_H)
             cr.scale(SIG_LINE_W / SIG_W, SIG_DISP_H / SIG_H)
@@ -527,8 +570,10 @@ class WaiverApp(Gtk.Application):
             out_dir.mkdir(parents=True, exist_ok=True)
             # rclone syncs SAVE_DIR live; flake.nix excludes the .tmp names from the copy.
             write_durably(path, surface.write_to_png)
-            write_durably(path.with_suffix(".json"),
-                          lambda f: f.write(json.dumps(meta, indent=2).encode()))
+            write_durably(
+                path.with_suffix(".json"),
+                lambda f: f.write(json.dumps(meta, indent=2).encode()),
+            )
         except (OSError, cairo.Error):
             log.exception("failed to save %s", path)
             return False
@@ -559,6 +604,6 @@ class WaiverApp(Gtk.Application):
 
 if __name__ == "__main__":
     logging.basicConfig(
-        level=logging.INFO,
-        format="%(levelname)s %(name)s: %(message)s")
+        level=logging.INFO, format="%(levelname)s %(name)s: %(message)s"
+    )
     raise SystemExit(WaiverApp().run(None))

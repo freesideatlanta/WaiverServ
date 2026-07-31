@@ -1,0 +1,2 @@
+# gi.require_version() must run before gi.repository imports
+lint.ignore = ["E402"]

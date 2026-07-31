@@ -1,4 +1,5 @@
 """Topaz signature pad reader: 8-byte packets from a serial device."""
+
 import os
 
 from gi.repository import GLib, GLibUnix
@@ -32,9 +33,11 @@ class TopazPad:
                 return True
             self.buf.clear()
             GLibUnix.fd_add_full(
-                GLib.PRIORITY_DEFAULT, self.fd,
+                GLib.PRIORITY_DEFAULT,
+                self.fd,
                 GLib.IOCondition.IN | GLib.IOCondition.HUP | GLib.IOCondition.ERR,
-                self._on_data)
+                self._on_data,
+            )
         return True
 
     def _on_data(self, fd, condition):
@@ -61,8 +64,9 @@ class TopazPad:
                 continue
             x = (packet[2] + packet[3] * 127 - 500) // 6
             y = (packet[4] + packet[5] * 127 - 350) // 6
-            events.append((x, y) if 0 <= x < self.width and 0 <= y < self.height
-                          else None)
+            events.append(
+                (x, y) if 0 <= x < self.width and 0 <= y < self.height else None
+            )
         if events:
             self.on_events(events)
         return True

@@ -11,6 +11,7 @@ signing prompt must be clicked first. Writes 300 points, well over the
 MIN_SIG_POINTS threshold, followed by a pen lift so a second run starts a
 new stroke instead of connecting to this one.
 """
+
 import math
 import sys
 

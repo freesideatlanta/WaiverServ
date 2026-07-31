@@ -41,18 +41,7 @@ ssh admin@waiverserv    # or admin@<its IP>
 
 ## Google Drive
 
-Put `rclone.conf` and `sa-key.json` (see [gdrive-sync.md](gdrive-sync.md)) on
-the partition. They land in `/var/lib/waiverserv-sync/`, owned by `waiver`,
-mode 600.
-
-`rclone.conf` must point at the copied key, not the card:
-
-```
-[gdrive]
-type = drive
-service_account_file = /var/lib/waiverserv-sync/sa-key.json
-team_drive = <shared drive ID>
-```
+Put `rclone.conf` and `sa-key.json` on the partition — see [gdrive-sync.md](gdrive-sync.md).
 
 ## Security note
 

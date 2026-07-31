@@ -2,6 +2,7 @@
 "click" here picks the widget at real overlay coordinates (verifying layout,
 visibility and hit-targets) and fires its click gesture. Pad input goes
 through a real FIFO into the TopazPad decoder."""
+
 import json
 import math
 import os
@@ -13,6 +14,7 @@ os.environ["DBUS_SYSTEM_BUS_ADDRESS"] = os.environ["DBUS_SESSION_BUS_ADDRESS"]
 
 import cairo
 import gi
+
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gio, GLib, Gtk
 import pytest
@@ -80,8 +82,9 @@ def click(app, widget):
     b = widget.compute_bounds(app.overlay)[1]
     x, y = b.get_x() + b.get_width() / 2, b.get_y() + b.get_height() / 2
     picked = app.overlay.pick(x, y, Gtk.PickFlags.DEFAULT)
-    assert picked is widget or picked.is_ancestor(widget), \
+    assert picked is widget or picked.is_ancestor(widget), (
         f"expected {widget} at ({x}, {y}), got {picked}"
+    )
     fire(picked, x, y)
 
 
@@ -91,15 +94,15 @@ def packet(x, y):
 
 
 def ink_points(field):
-    return sum(field.data[o:o + 3] == b"\x00\x00\x00"
-               for o in range(0, len(field.data), 4))
+    return sum(
+        field.data[o : o + 3] == b"\x00\x00\x00" for o in range(0, len(field.data), 4)
+    )
 
 
 def sign(app, pad, field):
     click(app, field.sign_prompt)
     assert field.active and field.picture.get_visible()
-    strokes = b"".join(packet(x, 40 + int(20 * math.sin(x / 9)))
-                       for x in range(250))
+    strokes = b"".join(packet(x, 40 + int(20 * math.sin(x / 9))) for x in range(250))
     os.write(pad, strokes + PEN_LIFT)
     wait_until(lambda: ink_points(field) >= main.MIN_SIG_POINTS)
 
@@ -137,14 +140,19 @@ def systemd():
 
     def on_call(conn, sender, path, iface, method, params, invocation):
         calls.append(tuple(params))
-        invocation.return_value(GLib.Variant("(o)", ("/org/freedesktop/systemd1/job/1",)))
+        invocation.return_value(
+            GLib.Variant("(o)", ("/org/freedesktop/systemd1/job/1",))
+        )
 
     node = Gio.DBusNodeInfo.new_for_xml(SYSTEMD_XML)
     bus.register_object("/org/freedesktop/systemd1", node.interfaces[0], on_call)
     owned = []
     Gio.bus_own_name_on_connection(
-        bus, "org.freedesktop.systemd1", Gio.BusNameOwnerFlags.NONE,
-        lambda *a: owned.append(True))
+        bus,
+        "org.freedesktop.systemd1",
+        Gio.BusNameOwnerFlags.NONE,
+        lambda *a: owned.append(True),
+    )
     wait_until(lambda: owned)
     return calls
 
